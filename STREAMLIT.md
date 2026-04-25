@@ -3,6 +3,7 @@
 Follow these steps to set up and run the Streamlit app on your local machine.
 
 ### Prerequisites
+Clone the repository by running the command `clone https://github.com/joms-hub/tagalog-fake-news-detection.git`.
 Ensure you have **Python** installed on your system. You can check by running `python --version` in your terminal.
 
 ### 1. Set Up a Virtual Environment (Recommended)
