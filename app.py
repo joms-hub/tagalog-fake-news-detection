@@ -359,24 +359,24 @@ def render_results(
             st.write(" ".join(tokens))
 
     # Debug section to diagnose label inversion
-    with st.expander("🔧 Debug: Raw Model Outputs"):
-        col1, col2 = st.columns(2)
-        with col1:
-            st.write("**DistilBERT Probabilities:**")
-            d_fake, d_real = metadata["distilbert_probs"]
-            st.write(f"  Fake: {d_fake:.4f}")
-            st.write(f"  Real: {d_real:.4f}")
-        with col2:
-            st.write("**MobileBERT Probabilities:**")
-            m_fake, m_real = metadata["mobilebert_probs"]
-            st.write(f"  Fake: {m_fake:.4f}")
-            st.write(f"  Real: {m_real:.4f}")
+    # with st.expander("🔧 Debug: Raw Model Outputs"):
+    #     col1, col2 = st.columns(2)
+    #     with col1:
+    #         st.write("**DistilBERT Probabilities:**")
+    #         d_fake, d_real = metadata["distilbert_probs"]
+    #         st.write(f"  Fake: {d_fake:.4f}")
+    #         st.write(f"  Real: {d_real:.4f}")
+    #     with col2:
+    #         st.write("**MobileBERT Probabilities:**")
+    #         m_fake, m_real = metadata["mobilebert_probs"]
+    #         st.write(f"  Fake: {m_fake:.4f}")
+    #         st.write(f"  Real: {m_real:.4f}")
         
-        st.write("---")
-        st.write("**⚠️ Diagnosis:**")
-        st.write("If both models consistently show **Real ≈ 0.95+** on obvious fake news:")
-        st.write("→ Labels may be **inverted** (Fake articles labeled as Real in training)")
-        st.write("→ Or fake news sources (VeraFiles, NUJP) were mislabeled as Real")
+    #     st.write("---")
+    #     st.write("**⚠️ Diagnosis:**")
+    #     st.write("If both models consistently show **Real ≈ 0.95+** on obvious fake news:")
+    #     st.write("→ Labels may be **inverted** (Fake articles labeled as Real in training)")
+    #     st.write("→ Or fake news sources (VeraFiles, NUJP) were mislabeled as Real")
 
     st.divider()
     st.write(
