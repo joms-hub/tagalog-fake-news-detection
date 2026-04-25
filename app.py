@@ -25,7 +25,7 @@ MODEL_CONFIG = {
     },
 }
 
-LABELS = ["Fake", "Real"]
+LABELS = ["Real", "Fake"]  # label 0=Real, label 1=Fake (per Cruz et al. dataset)
 MAX_LENGTH = 512
 TOP_K_TOKENS = 5
 
@@ -358,6 +358,26 @@ def render_results(
             st.write("*Token importance visualization unavailable. Showing raw tokens:*")
             st.write(" ".join(tokens))
 
+    # Debug section to diagnose label inversion
+    with st.expander("🔧 Debug: Raw Model Outputs"):
+        col1, col2 = st.columns(2)
+        with col1:
+            st.write("**DistilBERT Probabilities:**")
+            d_fake, d_real = metadata["distilbert_probs"]
+            st.write(f"  Fake: {d_fake:.4f}")
+            st.write(f"  Real: {d_real:.4f}")
+        with col2:
+            st.write("**MobileBERT Probabilities:**")
+            m_fake, m_real = metadata["mobilebert_probs"]
+            st.write(f"  Fake: {m_fake:.4f}")
+            st.write(f"  Real: {m_real:.4f}")
+        
+        st.write("---")
+        st.write("**⚠️ Diagnosis:**")
+        st.write("If both models consistently show **Real ≈ 0.95+** on obvious fake news:")
+        st.write("→ Labels may be **inverted** (Fake articles labeled as Real in training)")
+        st.write("→ Or fake news sources (VeraFiles, NUJP) were mislabeled as Real")
+
     st.divider()
     st.write(
         "**Model Info:** "
@@ -389,7 +409,7 @@ def main():
         placeholder="Input a Tagalog news article here...",
         height=150,
     )
-    submit_button = st.sidebar.button("Analyze", use_container_width=True)
+    submit_button = st.sidebar.button("🚀 Analyze", use_container_width=True)
 
     # Main content
     if not (submit_button and news_article):
@@ -416,7 +436,7 @@ def main():
             )
 
         except Exception as e:
-            st.error(f"Prediction failed: {str(e)}")
+            st.error(f"❌ Prediction failed: {str(e)}")
             st.write("Please try again or contact the developer.")
 
 
