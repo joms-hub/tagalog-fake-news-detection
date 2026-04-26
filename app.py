@@ -77,11 +77,23 @@ def load_models_and_tokenizers() -> Tuple:
 # Ensemble Prediction
 # ============================================================================
 
-# ============================================================================
-# Ensemble Prediction
-# ============================================================================
-
-def compute_ensemble_weights() -> Tuple[float, float]:
+def calibrate_labels():
+    """
+    Quick test to determine correct label mapping.
+    Returns True if current LABELS order matches model expectations.
+    """
+    # A clearly FAKE article (from NUJP fact-checks)
+    fake_test = """Sa isang viral na post sa Facebook, isinasaad na ang Pangulong Rodrigo Duterte 
+    ay magbibigay ng libreng cellphones sa lahat ng Pilipino. Ang post ay nag-claim na ito ay 
+    official program na hindi pa nai-announce. Ngunit ayon sa NUJP, walang official announcement 
+    mula sa government."""
+    
+    # A clearly REAL article (mainstream news)
+    real_test = """MANILA - Ang Bangko Sentral ng Pilipinas ay nag-anunsyo ng pagtaas sa interest rate. 
+    Ayon sa BSP Governor, ang desisyon ay para kontrolin ang inflation. Ang bawas na lending rate 
+    ay nakatulong sa ekonomiya."""
+    
+    return fake_test, real_test
     """Normalize F1 scores to ensemble weights."""
     f1_distil = MODEL_CONFIG["distilbert"]["f1"]
     f1_mobile = MODEL_CONFIG["mobilebert"]["f1"]
@@ -368,23 +380,23 @@ def render_results(
             st.write(" ".join(tokens))
 
     # Debug section to diagnose label inversion
-    with st.expander("🔧 Debug: Raw Model Outputs"):
-        col1, col2 = st.columns(2)
-        with col1:
-            st.write("**DistilBERT Probabilities:**")
-            d_real, d_fake = metadata["distilbert_probs"]  # [class_0=Real, class_1=Fake]
-            st.write(f"  Real: {d_real:.4f}")
-            st.write(f"  Fake: {d_fake:.4f}")
-        with col2:
-            st.write("**MobileBERT Probabilities:**")
-            m_real, m_fake = metadata["mobilebert_probs"]  # [class_0=Real, class_1=Fake]
-            st.write(f"  Real: {m_real:.4f}")
-            st.write(f"  Fake: {m_fake:.4f}")
+    # with st.expander("🔧 Debug: Raw Model Outputs"):
+    #     col1, col2 = st.columns(2)
+    #     with col1:
+    #         st.write("**DistilBERT Probabilities:**")
+    #         d_real, d_fake = metadata["distilbert_probs"]  # [class_0=Real, class_1=Fake]
+    #         st.write(f"  Real: {d_real:.4f}")
+    #         st.write(f"  Fake: {d_fake:.4f}")
+    #     with col2:
+    #         st.write("**MobileBERT Probabilities:**")
+    #         m_real, m_fake = metadata["mobilebert_probs"]  # [class_0=Real, class_1=Fake]
+    #         st.write(f"  Real: {m_real:.4f}")
+    #         st.write(f"  Fake: {m_fake:.4f}")
         
-        st.write("---")
-        st.write("**Probabilities explained:**")
-        st.write("Displayed as [Real probability, Fake probability]")
-        st.write("The ensemble prediction picks the class with highest probability.")
+    #     st.write("---")
+    #     st.write("**Probabilities explained:**")
+    #     st.write("Displayed as [Real probability, Fake probability]")
+    #     st.write("The ensemble prediction picks the class with highest probability.")
 
     st.divider()
     st.write(
