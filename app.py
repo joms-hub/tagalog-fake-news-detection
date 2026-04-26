@@ -77,23 +77,11 @@ def load_models_and_tokenizers() -> Tuple:
 # Ensemble Prediction
 # ============================================================================
 
-def calibrate_labels():
-    """
-    Quick test to determine correct label mapping.
-    Returns True if current LABELS order matches model expectations.
-    """
-    # A clearly FAKE article (from NUJP fact-checks)
-    fake_test = """Sa isang viral na post sa Facebook, isinasaad na ang Pangulong Rodrigo Duterte 
-    ay magbibigay ng libreng cellphones sa lahat ng Pilipino. Ang post ay nag-claim na ito ay 
-    official program na hindi pa nai-announce. Ngunit ayon sa NUJP, walang official announcement 
-    mula sa government."""
-    
-    # A clearly REAL article (mainstream news)
-    real_test = """MANILA - Ang Bangko Sentral ng Pilipinas ay nag-anunsyo ng pagtaas sa interest rate. 
-    Ayon sa BSP Governor, ang desisyon ay para kontrolin ang inflation. Ang bawas na lending rate 
-    ay nakatulong sa ekonomiya."""
-    
-    return fake_test, real_test
+# ============================================================================
+# Ensemble Prediction
+# ============================================================================
+
+def compute_ensemble_weights() -> Tuple[float, float]:
     """Normalize F1 scores to ensemble weights."""
     f1_distil = MODEL_CONFIG["distilbert"]["f1"]
     f1_mobile = MODEL_CONFIG["mobilebert"]["f1"]
