@@ -25,7 +25,7 @@ MODEL_CONFIG = {
     },
 }
 
-LABELS = ["Real", "Fake"]  # label 0=Real, label 1=Fake (per Cruz et al. dataset)
+LABELS = ["Real", "Fake"]  # Official: 0=Real, 1=Fake (jcblaisecruz02 & jcunado)
 MAX_LENGTH = 512
 TOP_K_TOKENS = 5
 
@@ -77,7 +77,23 @@ def load_models_and_tokenizers() -> Tuple:
 # Ensemble Prediction
 # ============================================================================
 
-def compute_ensemble_weights() -> Tuple[float, float]:
+def calibrate_labels():
+    """
+    Quick test to determine correct label mapping.
+    Returns True if current LABELS order matches model expectations.
+    """
+    # A clearly FAKE article (from NUJP fact-checks)
+    fake_test = """Sa isang viral na post sa Facebook, isinasaad na ang Pangulong Rodrigo Duterte 
+    ay magbibigay ng libreng cellphones sa lahat ng Pilipino. Ang post ay nag-claim na ito ay 
+    official program na hindi pa nai-announce. Ngunit ayon sa NUJP, walang official announcement 
+    mula sa government."""
+    
+    # A clearly REAL article (mainstream news)
+    real_test = """MANILA - Ang Bangko Sentral ng Pilipinas ay nag-anunsyo ng pagtaas sa interest rate. 
+    Ayon sa BSP Governor, ang desisyon ay para kontrolin ang inflation. Ang bawas na lending rate 
+    ay nakatulong sa ekonomiya."""
+    
+    return fake_test, real_test
     """Normalize F1 scores to ensemble weights."""
     f1_distil = MODEL_CONFIG["distilbert"]["f1"]
     f1_mobile = MODEL_CONFIG["mobilebert"]["f1"]
@@ -135,6 +151,11 @@ def predict(
     final_probs = w1 * distilbert_probs + w2 * mobilebert_probs
     final_class = np.argmax(final_probs, axis=1)[0]
     final_confidence = np.max(final_probs, axis=1)[0] * 100
+
+    # DEBUG: Print which index is which
+    # print(f"DEBUG: final_probs[0] = {final_probs[0]}")
+    # print(f"DEBUG: final_class (argmax) = {final_class}")
+    # print(f"DEBUG: LABELS[{final_class}] = {LABELS[final_class]}")
 
     prediction = LABELS[final_class]
 
@@ -306,19 +327,19 @@ def render_results(
         col1, col2, col3 = st.columns(3)
         
         with col1:
-            distil_fake, distil_real = metadata["distilbert_probs"]
-            st.metric("DistilBERT (Fake)", f"{distil_fake*100:.2f}%")
+            distil_real, distil_fake = metadata["distilbert_probs"]  # [class_0=Real, class_1=Fake]
             st.metric("DistilBERT (Real)", f"{distil_real*100:.2f}%")
+            st.metric("DistilBERT (Fake)", f"{distil_fake*100:.2f}%")
         
         with col2:
-            mobile_fake, mobile_real = metadata["mobilebert_probs"]
-            st.metric("MobileBERT (Fake)", f"{mobile_fake*100:.2f}%")
+            mobile_real, mobile_fake = metadata["mobilebert_probs"]  # [class_0=Real, class_1=Fake]
             st.metric("MobileBERT (Real)", f"{mobile_real*100:.2f}%")
+            st.metric("MobileBERT (Fake)", f"{mobile_fake*100:.2f}%")
         
         with col3:
-            ens_fake, ens_real = metadata["ensemble_probs"]
-            st.metric("Ensemble (Fake)", f"{ens_fake*100:.2f}%")
+            ens_real, ens_fake = metadata["ensemble_probs"]  # [class_0=Real, class_1=Fake]
             st.metric("Ensemble (Real)", f"{ens_real*100:.2f}%")
+            st.metric("Ensemble (Fake)", f"{ens_fake*100:.2f}%")
         
         st.write(f"**Weights:** DistilBERT {metadata['weights']['distilbert']:.3f} | MobileBERT {metadata['weights']['mobilebert']:.3f}")
 
@@ -359,24 +380,23 @@ def render_results(
             st.write(" ".join(tokens))
 
     # Debug section to diagnose label inversion
-    # with st.expander("🔧 Debug: Raw Model Outputs"):
-    #     col1, col2 = st.columns(2)
-    #     with col1:
-    #         st.write("**DistilBERT Probabilities:**")
-    #         d_fake, d_real = metadata["distilbert_probs"]
-    #         st.write(f"  Fake: {d_fake:.4f}")
-    #         st.write(f"  Real: {d_real:.4f}")
-    #     with col2:
-    #         st.write("**MobileBERT Probabilities:**")
-    #         m_fake, m_real = metadata["mobilebert_probs"]
-    #         st.write(f"  Fake: {m_fake:.4f}")
-    #         st.write(f"  Real: {m_real:.4f}")
+    with st.expander("🔧 Debug: Raw Model Outputs"):
+        col1, col2 = st.columns(2)
+        with col1:
+            st.write("**DistilBERT Probabilities:**")
+            d_real, d_fake = metadata["distilbert_probs"]  # [class_0=Real, class_1=Fake]
+            st.write(f"  Real: {d_real:.4f}")
+            st.write(f"  Fake: {d_fake:.4f}")
+        with col2:
+            st.write("**MobileBERT Probabilities:**")
+            m_real, m_fake = metadata["mobilebert_probs"]  # [class_0=Real, class_1=Fake]
+            st.write(f"  Real: {m_real:.4f}")
+            st.write(f"  Fake: {m_fake:.4f}")
         
-    #     st.write("---")
-    #     st.write("**⚠️ Diagnosis:**")
-    #     st.write("If both models consistently show **Real ≈ 0.95+** on obvious fake news:")
-    #     st.write("→ Labels may be **inverted** (Fake articles labeled as Real in training)")
-    #     st.write("→ Or fake news sources (VeraFiles, NUJP) were mislabeled as Real")
+        st.write("---")
+        st.write("**Probabilities explained:**")
+        st.write("Displayed as [Real probability, Fake probability]")
+        st.write("The ensemble prediction picks the class with highest probability.")
 
     st.divider()
     st.write(
@@ -409,7 +429,7 @@ def main():
         placeholder="Input a Tagalog news article here...",
         height=150,
     )
-    submit_button = st.sidebar.button("🚀 Analyze", use_container_width=True)
+    submit_button = st.sidebar.button("Analyze", use_container_width=True)
 
     # Main content
     if not (submit_button and news_article):
@@ -436,7 +456,7 @@ def main():
             )
 
         except Exception as e:
-            st.error(f"❌ Prediction failed: {str(e)}")
+            st.error(f"Prediction failed: {str(e)}")
             st.write("Please try again or contact the developer.")
 
 
